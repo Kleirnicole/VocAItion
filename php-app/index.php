@@ -10,13 +10,15 @@ session_start();
 // Database connection
 require_once __DIR__ . '/db/config.php';
 
-try {
-    echo "Connected to database successfully!";
-} catch (Exception $e) {
-    die("Database connection failed: " . $e->getMessage());
+// Check connection
+if (isset($pdo) && $pdo) {
+    echo "Connected to database successfully (PDO)!";
+} elseif (isset($mysqli) && $mysqli instanceof mysqli) {
+    echo "Connected to database successfully (MySQLi)!";
+} else {
+    die("Database connection failed. Please check config.php settings.");
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -82,7 +84,6 @@ try {
   </style>
 </head>
 <body>
-
   <div class="card">
     <h1>Sagay National High School</h1>
 
@@ -117,6 +118,5 @@ try {
       &copy; <?= date("Y"); ?> VocAItion Application. All rights reserved.
     </footer>
   </div>
-
 </body>
 </html>
