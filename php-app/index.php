@@ -1,10 +1,22 @@
 <?php
+// Enable error reporting for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// Start session
+session_start();
+
+// Database connection
 require_once 'php-app/db/config.php';
 
-echo "Connected to database successfully!";
+try {
+    echo "Connected to database successfully!";
+} catch (Exception $e) {
+    die("Database connection failed: " . $e->getMessage());
+}
 ?>
 
-<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,7 +26,7 @@ echo "Connected to database successfully!";
   <style>
     body {
       height: 100vh;
-      background: linear-gradient(135deg, #002147, #ffc107); /* Navy blue to yellow */
+      background: linear-gradient(135deg, #002147, #ffc107);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -24,7 +36,7 @@ echo "Connected to database successfully!";
       border-radius: 20px;
       box-shadow: 0 8px 20px rgba(0,0,0,0.15);
       padding: 40px 30px;
-      background: #f5e6d3; /* Light brown */
+      background: #f5e6d3;
       text-align: center;
       max-width: 450px;
       width: 100%;
@@ -34,7 +46,7 @@ echo "Connected to database successfully!";
       font-size: 1.6rem;
       font-weight: 600;
       margin-bottom: 1rem;
-      color: #002147; /* Navy blue */
+      color: #002147;
     }
     h5 {
       font-size: 1.3rem;
@@ -48,17 +60,14 @@ echo "Connected to database successfully!";
       font-size: 1rem;
       font-weight: 500;
       border-radius: 30px;
+      background-color: #8B5E3C;
+      color: #fff;
       transition: all 0.3s ease;
     }
     .btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
-    .btn {
-      background-color: #8B5E3C; /* Warm brown */
-      color: #fff;
-    }   
-
     footer {
       text-align: center;
       margin-top: 20px;
@@ -75,36 +84,31 @@ echo "Connected to database successfully!";
 <body>
 
   <div class="card">
-    <!-- System Title -->
     <h1>Sagay National High School</h1>
 
-    <!-- School Logo and Name -->
     <div class="d-flex flex-column align-items-center justify-content-center mb-3">
       <a href="https://sagaynhs.edu.ph" target="_blank">
-        <img src="sagayNHS_logo.png" alt="Sagay National High School Logo"
-            style="width: 120px; height: auto; max-width: 100%; margin-bottom: 10px;">
+        <img src="sagayNHS_logo.png" alt="Sagay NHS Logo"
+             style="width: 120px; height: auto; max-width: 100%; margin-bottom: 10px;"
+             onerror="this.style.display='none';">
       </a>
       <h5>VocAItion: AI-Powered Career Path Suggestion Tool</h5>
     </div>
 
     <p class="text-muted mb-4">Select your portal below</p>
 
-    <!-- ✅ Admin Login -->
     <form action="admin-login.php" method="get">
       <button type="submit" class="btn">Principal</button>
     </form>
 
-    <!-- ✅ Counselor Login -->
     <form action="counselor-login.php" method="get">
       <button type="submit" class="btn">Guidance Counselor</button>
     </form>
 
-    <!-- ✅ Student Login -->
     <form action="student-login.php" method="get">
       <button type="submit" class="btn">Student</button>
     </form>
 
-    <!-- ✅ Registration -->
     <form action="register.php" method="get">
       <button type="submit" class="btn">Register (Guidance)</button>
     </form>
