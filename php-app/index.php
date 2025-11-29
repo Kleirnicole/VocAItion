@@ -10,13 +10,11 @@ session_start();
 // Database connection
 require_once __DIR__ . '/db/config.php';
 
-// Check connection
-if (isset($pdo) && $pdo) {
-    echo "Connected to database successfully (PDO)!";
-} elseif (isset($mysqli) && $mysqli instanceof mysqli) {
+// Confirm connection
+if ($conn && !$conn->connect_error) {
     echo "Connected to database successfully (MySQLi)!";
 } else {
-    die("Database connection failed. Please check config.php settings.");
+    die("Database connection failed.");
 }
 ?>
 <!DOCTYPE html>
