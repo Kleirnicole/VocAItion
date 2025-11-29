@@ -1,3 +1,9 @@
+<?php
+require_once 'php-app/db/config.php';
+
+echo "Connected to database successfully!";
+?>
+
 <?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="en">
