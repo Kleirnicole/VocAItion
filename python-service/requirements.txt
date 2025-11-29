@@ -1,7 +1,5 @@
 flask
-gunicorn
 joblib
 scikit-learn
 pandas
-sentence-transformers
-numpy
+requests

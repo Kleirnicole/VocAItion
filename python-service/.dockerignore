@@ -1,23 +1,33 @@
-# Already included
+# Model and data files
 *.zip
 *.pkl
-__pycache__/
-.venv/
-
-# Add these to exclude more clutter
-*.log
 *.csv
 *.db
 *.sqlite
-*.ipynb
-*.tar.gz
-*.whl
+*.log
+
+# Python build artifacts
+__pycache__/
 *.egg-info/
+*.whl
+*.tar.gz
 *.cache/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# IDE and config files
+*.ipynb
 *.idea/
 *.vscode/
 .DS_Store
 .env
+
+# Node/JS leftovers (if any)
 node_modules/
-tests/
+
+# Docs and tests
 docs/
+tests/
