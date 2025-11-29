@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 session_start();
 
 // Database connection
-require_once __DIR__ . '/php-app/db/config.php';
+require_once __DIR__ . '/db/config.php';
 
 try {
     echo "Connected to database successfully!";
