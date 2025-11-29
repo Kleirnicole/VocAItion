@@ -1,4 +1,23 @@
+# Already included
+*.zip
 *.pkl
-*.xlsx
 __pycache__/
-*.txt
+.venv/
+
+# Add these to exclude more clutter
+*.log
+*.csv
+*.db
+*.sqlite
+*.ipynb
+*.tar.gz
+*.whl
+*.egg-info/
+*.cache/
+*.idea/
+*.vscode/
+.DS_Store
+.env
+node_modules/
+tests/
+docs/
