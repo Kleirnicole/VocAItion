@@ -1,1 +1,10 @@
-FROM php:8.2-apacheecho.echo # Install MySQL driversecho RUN docker-php-ext-install pdo pdo_mysql mysqliecho.echo # Copy your app filesecho COPY . /var/www/html/echo.echo # Enable Apache rewrite moduleecho RUN a2enmod rewrite
+FROM php:8.2-apache
+
+# Install MySQL drivers
+RUN docker-php-ext-install pdo pdo_mysql mysqli
+
+# Copy your app files
+COPY . /var/www/html/
+
+# Enable Apache rewrite module
+RUN a2enmod rewrite
