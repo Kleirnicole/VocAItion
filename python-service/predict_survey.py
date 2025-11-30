@@ -4,8 +4,8 @@ import joblib
 import pandas as pd
 import os
 import io
-from sentence_transformers import SentenceTransformer, util
 import numpy as np
+from sentence_transformers import SentenceTransformer, util
 
 # Fix UTF-8 print
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
@@ -17,9 +17,16 @@ FEATURE_ENCODERS_FILE = "feature_encoders.pkl"
 TARGET_ENCODER_FILE = "target_encoder.pkl"
 RIASEC_ENCODER_FILE = "riasec_encoder.pkl"
 
+# Lazy-load global embedder
+_embedder = None
+def get_embedder():
+    global _embedder
+    if _embedder is None:
+        _embedder = SentenceTransformer("all-MiniLM-L6-v2")
+    return _embedder
+
 # Load model + encoders
 def load_model_and_encoders():
-    # NOTE: best_model.pkl should be a calibrated Random Forest
     model = joblib.load(MODEL_FILE)
     feature_encoders = joblib.load(FEATURE_ENCODERS_FILE)
     target_encoder = joblib.load(TARGET_ENCODER_FILE)
@@ -32,7 +39,6 @@ def prepare_input(data, feature_encoders, riasec_encoder):
 
     for col in df.columns:
         if col in feature_encoders:
-            # Normalize answers
             df[col] = df[col].apply(
                 lambda x: "Yes" if str(x).lower() in ["1", "yes", "y", "true"] else
                           "No" if str(x).lower() in ["0", "no", "n", "false"] else
@@ -40,7 +46,6 @@ def prepare_input(data, feature_encoders, riasec_encoder):
             )
             if df[col].iloc[0] not in feature_encoders[col].classes_:
                 df[col] = feature_encoders[col].classes_[0]
-
             df[col] = feature_encoders[col].transform(df[col])
 
     # RIASEC codes
@@ -77,7 +82,6 @@ def main():
         sys.exit(1)
 
     file_path = sys.argv[1]
-
     if not os.path.exists(file_path):
         print(json.dumps({"error": "JSON file not found"}))
         sys.exit(1)
@@ -106,34 +110,6 @@ def main():
         X = prepare_input(data, feature_encoders, riasec_encoder)
         probs = model.predict_proba(X)[0]
 
-        top_indices = probs.argsort()[::-1][:3]
-        top_courses = target_encoder.inverse_transform(top_indices)
-
-        ml_course = top_courses[0]
-        ml_course_clean = ml_course.lower().strip()
-        ml_score = round(probs[top_indices[0]] * 100, 2)
-
-        # ==== SEMANTIC AI ====
-        embedder = SentenceTransformer('all-MiniLM-L6-v2')
-
-        student_text = survey_to_text(data)
-        course_texts = course_df["Description"].tolist()
-
-        course_embeddings = embedder.encode(course_texts, convert_to_tensor=True)
-        student_embedding = embedder.encode(student_text, convert_to_tensor=True)
-
-        scores = util.cos_sim(student_embedding, course_embeddings)[0]
-
-        sem_idx = int(scores.argmax())
-        sem_course = course_df.iloc[sem_idx]["Course Name"]
-        sem_course_clean = course_df.iloc[sem_idx]["Course Name Clean"]
-        sem_score = round(scores[sem_idx].item() * 100, 2)
-
-        # ==== ML PREDICTION ====
-        X = prepare_input(data, feature_encoders, riasec_encoder)
-        probs = model.predict_proba(X)[0]
-
-        # Get top 2 courses from ML
         top_indices = probs.argsort()[::-1][:2]
         top_courses = target_encoder.inverse_transform(top_indices)
 
@@ -144,17 +120,28 @@ def main():
         suggested_course = top_courses[1]
         suggested_score = round(probs[top_indices[1]] * 100, 2)
 
-        final_course = ml_course
-        final_score = ml_score
-        final_desc = get_course_info(course_df, ml_course_clean)
+        # ==== SEMANTIC AI ====
+        embedder = get_embedder()
+        student_text = survey_to_text(data)
+        course_texts = course_df["Description"].tolist()
+
+        course_embeddings = embedder.encode(course_texts, convert_to_tensor=True)
+        student_embedding = embedder.encode(student_text, convert_to_tensor=True)
+
+        scores = util.cos_sim(student_embedding, course_embeddings)[0]
+        sem_idx = int(scores.argmax())
+        sem_course = course_df.iloc[sem_idx]["Course Name"]
+        sem_score = round(scores[sem_idx].item() * 100, 2)
 
         # ==== JSON OUTPUT ====
         result = {
-            "recommended_course": final_course,
-            "recommended_score": final_score,
-            "recommended_description": final_desc,
+            "recommended_course": ml_course,
+            "recommended_score": ml_score,
+            "recommended_description": get_course_info(course_df, ml_course_clean),
             "suggested_course": suggested_course,
             "suggested_score": suggested_score,
+            "semantic_course": sem_course,
+            "semantic_score": sem_score,
             "ml_top_courses": list(top_courses),
             "ml_top_scores": [round(probs[i] * 100, 2) for i in top_indices]
         }
