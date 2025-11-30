@@ -8,13 +8,18 @@ error_reporting(E_ALL);
 session_start();
 
 // Database connection
-require_once __DIR__ . '/db/config.php';
+// Adjust path depending on where config.php is located
+$configPath = __DIR__ . '/db/config.php';
+if (!file_exists($configPath)) {
+    $configPath = __DIR__ . '/php-app/db/config.php';
+}
+require_once $configPath;
 
 // Confirm connection
-if ($conn && !$conn->connect_error) {
-    echo "Connected to database successfully (MySQLi)!";
+if (isset($conn) && $conn instanceof mysqli && !$conn->connect_error) {
+    $dbStatus = "✅ Connected to database successfully (MySQLi)";
 } else {
-    die("Database connection failed.");
+    $dbStatus = "❌ Database connection failed.";
 }
 ?>
 <!DOCTYPE html>
@@ -95,6 +100,9 @@ if ($conn && !$conn->connect_error) {
     </div>
 
     <p class="text-muted mb-4">Select your portal below</p>
+
+    <!-- Show DB connection status -->
+    <p><strong><?php echo $dbStatus; ?></strong></p>
 
     <form action="admin-login.php" method="get">
       <button type="submit" class="btn">Principal</button>
