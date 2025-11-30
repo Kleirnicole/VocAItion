@@ -19,22 +19,36 @@ RIASEC_ENCODER_FILE = "riasec_encoder.pkl"
 
 # Lazy-load global embedder
 _embedder = None
+
+# Lazy-load embedder
 def get_embedder():
     global _embedder
     if _embedder is None:
+        print("🔄 Loading sentence transformer...")
         _embedder = SentenceTransformer("all-MiniLM-L6-v2")
     return _embedder
 
-# Load model + encoders
-def load_model_and_encoders():
-    model = joblib.load(MODEL_FILE)
-    feature_encoders = joblib.load(FEATURE_ENCODERS_FILE)
-    target_encoder = joblib.load(TARGET_ENCODER_FILE)
-    riasec_encoder = joblib.load(RIASEC_ENCODER_FILE)
-    return model, feature_encoders, target_encoder, riasec_encoder
+# Load model and encoders
+def init():
+    global model, feature_encoders, target_encoder, riasec_encoder, course_df
+    try:
+        print("🔄 Loading model and encoders...")
+        model = joblib.load(MODEL_FILE)
+        feature_encoders = joblib.load(FEATURE_ENCODERS_FILE)
+        target_encoder = joblib.load(TARGET_ENCODER_FILE)
+        riasec_encoder = joblib.load(RIASEC_ENCODER_FILE)
+
+        course_df = pd.read_excel(COURSE_DESC_FILE)
+        course_df.columns = course_df.columns.str.strip()
+        course_df["Course Name"] = course_df["Course Name"].str.strip()
+        course_df["Course Name Clean"] = course_df["Course Name"].str.lower()
+
+        print("✅ Model and data loaded.")
+    except Exception as e:
+        raise RuntimeError(f"Failed to load model/data: {e}")
 
 # Prepare ML input
-def prepare_input(data, feature_encoders, riasec_encoder):
+def prepare_input(data):
     df = pd.DataFrame([{f"q{i}": data.get(f"q{i}", "") for i in range(1, 43)}])
 
     for col in df.columns:
@@ -48,34 +62,49 @@ def prepare_input(data, feature_encoders, riasec_encoder):
                 df[col] = feature_encoders[col].classes_[0]
             df[col] = feature_encoders[col].transform(df[col])
 
-    # RIASEC codes
-    if "code" in data:
-        codes = data["code"].split(",")
-    elif "top_3_types" in data:
-        codes = data["top_3_types"].split(",")
-    else:
-        codes = []
-
+    codes = data.get("code") or data.get("top_3_types") or ""
+    codes = codes.split(",") if codes else []
     riasec_features = pd.DataFrame(
         riasec_encoder.transform([codes]),
         columns=riasec_encoder.classes_
     )
 
-    df = pd.concat([df, riasec_features], axis=1)
-    return df
+    return pd.concat([df, riasec_features], axis=1)
 
-# Convert survey to text for semantic AI
+# Convert survey to text
 def survey_to_text(data):
     return " ".join([f"{key}: {data[key]}" for key in data if key.startswith("q")])
 
-# Fetch course description
-def get_course_info(course_df, course_name_clean):
+# Get course description
+def get_course_info(course_name_clean):
     match = course_df[course_df["Course Name Clean"] == course_name_clean]
-    if not match.empty:
-        return match["Description"].values[0]
-    return "No description available"
+    return match["Description"].values[0] if not match.empty else "No description available"
 
-# ------------------------- MAIN PROCESS -------------------------
+# Main prediction logic
+def predict(data):
+    X = prepare_input(data)
+    probs = model.predict_proba(X)[0]
+
+    top_indices = probs.argsort()[::-1][:2]
+    top_courses = target_encoder.inverse_transform(top_indices)
+
+    ml_course = top_courses[0]
+    ml_course_clean = ml_course.lower().strip()
+    ml_score = round(probs[top_indices[0]] * 100, 2)
+
+    suggested_course = top_courses[1]
+    suggested_score = round(probs[top_indices[1]] * 100, 2)
+
+    # Build only the required JSON result
+    return {
+        "recommended_course": ml_course,
+        "recommended_score": ml_score,
+        "recommended_description": get_course_info(ml_course_clean),
+        "suggested_course": suggested_course,
+        "suggested_score": suggested_score
+    }
+
+# CLI entry point
 def main():
     if len(sys.argv) < 2:
         print(json.dumps({"error": "No input JSON provided"}))
@@ -94,60 +123,9 @@ def main():
         sys.exit(1)
 
     try:
-        model, feature_encoders, target_encoder, riasec_encoder = load_model_and_encoders()
-
-        course_df = pd.read_excel(COURSE_DESC_FILE)
-        course_df.columns = course_df.columns.str.strip()
-        course_df["Course Name"] = course_df["Course Name"].str.strip()
-        course_df["Course Name Clean"] = course_df["Course Name"].str.lower()
-
-    except Exception as e:
-        print(json.dumps({"error": f"Failed loading model/data: {e}"}))
-        sys.exit(1)
-
-    try:
-        # ==== ML PREDICTION ====
-        X = prepare_input(data, feature_encoders, riasec_encoder)
-        probs = model.predict_proba(X)[0]
-
-        top_indices = probs.argsort()[::-1][:2]
-        top_courses = target_encoder.inverse_transform(top_indices)
-
-        ml_course = top_courses[0]
-        ml_course_clean = ml_course.lower().strip()
-        ml_score = round(probs[top_indices[0]] * 100, 2)
-
-        suggested_course = top_courses[1]
-        suggested_score = round(probs[top_indices[1]] * 100, 2)
-
-        # ==== SEMANTIC AI ====
-        embedder = get_embedder()
-        student_text = survey_to_text(data)
-        course_texts = course_df["Description"].tolist()
-
-        course_embeddings = embedder.encode(course_texts, convert_to_tensor=True)
-        student_embedding = embedder.encode(student_text, convert_to_tensor=True)
-
-        scores = util.cos_sim(student_embedding, course_embeddings)[0]
-        sem_idx = int(scores.argmax())
-        sem_course = course_df.iloc[sem_idx]["Course Name"]
-        sem_score = round(scores[sem_idx].item() * 100, 2)
-
-        # ==== JSON OUTPUT ====
-        result = {
-            "recommended_course": ml_course,
-            "recommended_score": ml_score,
-            "recommended_description": get_course_info(course_df, ml_course_clean),
-            "suggested_course": suggested_course,
-            "suggested_score": suggested_score,
-            "semantic_course": sem_course,
-            "semantic_score": sem_score,
-            "ml_top_courses": list(top_courses),
-            "ml_top_scores": [round(probs[i] * 100, 2) for i in top_indices]
-        }
-
+        init()
+        result = predict(data)
         print(json.dumps(result, ensure_ascii=False))
-
     except Exception as e:
         print(json.dumps({"error": f"Prediction error: {e}"}))
         sys.exit(1)
