@@ -9,5 +9,9 @@ php-app/vendor/
 __pycache__/
 *.pyc
 *.pyo
+<<<<<<< HEAD
 *.log
 .git.backup.*
+=======
+*.log
+>>>>>>> 95a0bf6b2e98761a70d6974d23f4257ad04ade11
