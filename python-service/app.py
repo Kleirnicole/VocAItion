@@ -24,6 +24,7 @@ def predict_route():
 
 if __name__ == "__main__":
     import os
-    port = int(os.environ.get("PORT", 5000))
-    print(f"Running on port {port}")
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))  # Railway expects 8080
     app.run(host="0.0.0.0", port=port)
