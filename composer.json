@@ -1,0 +1,10 @@
+{
+  "name": "vocaiton/app",
+  "description": "VocAItion PHP app for Sagay NHS",
+  "type": "project",
+  "require": {
+    "ext-pdo": "*",
+    "ext-pdo_mysql": "*",
+    "ext-mysqli": "*"
+  }
+}
