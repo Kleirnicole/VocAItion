@@ -1,14 +1,12 @@
-FROM php:8.2-apache
+FROM python:3.11-slim
 
-# Install MySQL drivers
-RUN docker-php-ext-install pdo pdo_mysql mysqli
+WORKDIR /app
 
-# Copy app files
-COPY . /var/www/html/
+COPY python-service/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Set correct permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html
+COPY python-service/ .
 
-# Enable Apache rewrite module
-RUN a2enmod rewrite
+EXPOSE 8080
+
+CMD ["python", "app.py"]
