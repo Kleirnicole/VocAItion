@@ -1,0 +1,33 @@
+# Model and data files
+*.zip
+*.pkl
+*.csv
+*.db
+*.sqlite
+*.log
+
+# Python build artifacts
+__pycache__/
+*.egg-info/
+*.whl
+*.tar.gz
+*.cache/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# IDE and config files
+*.ipynb
+*.idea/
+*.vscode/
+.DS_Store
+.env
+
+# Node/JS leftovers (if any)
+node_modules/
+
+# Docs and tests
+docs/
+tests/

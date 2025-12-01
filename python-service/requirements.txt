@@ -1,0 +1,8 @@
+flask
+joblib
+pandas
+numpy
+scikit-learn
+openpyxl
+sentence-transformers
+torch==2.9.1
