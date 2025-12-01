@@ -1,30 +1,31 @@
-print("Starting Flask app...")
-
+import os
 from flask import Flask, request, jsonify
-from predict_survey import init, prepare_input, get_course_info, survey_to_text, predict
+import predict_survey  # import your module
 
-# Create the Flask app
 app = Flask(__name__)
 
-# Initialize models and encoders
-init()
-
+# Healthcheck route
 @app.route("/")
 def home():
-    return "AI Prediction Service Running"
+    return "Service is running"
 
+# Prediction route
 @app.route("/predict", methods=["POST"])
-def predict_route():
+def predict():
     try:
         data = request.get_json()
-        result = predict(data)
+
+        # Initialize model/encoders once
+        if not hasattr(predict_survey, "model"):
+            predict_survey.init()
+
+        # Run prediction
+        result = predict_survey.predict(data)
+
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    import os
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))  # Railway expects 8080
+    port = int(os.environ.get("PORT", 8080))  # Railway sets PORT
     app.run(host="0.0.0.0", port=port)
