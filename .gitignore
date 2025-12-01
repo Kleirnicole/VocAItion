@@ -1,0 +1,13 @@
+# Ignore Python virtual environments
+venv/
+php-app/venv/
+
+# Ignore PHP vendor dependencies
+php-app/vendor/
+
+# Ignore caches and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.git.backup.*

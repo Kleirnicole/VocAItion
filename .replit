@@ -1,0 +1,52 @@
+modules = ["python-3.11", "php-8.2", "postgresql-16"]
+[agent]
+expertMode = true
+integrations = ["python_openai_ai_integrations:1.0.0"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["cacert", "cairo", "cargo", "chromedriver", "ffmpeg-full", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtk3", "lcms2", "libcxx", "libiconv", "libimagequant", "libjpeg", "libmysqlclient", "libtiff", "libwebp", "libxcrypt", "openjpeg", "openssl", "pgadmin4", "pkg-config", "qhull", "rustc", "tcl", "tk", "xsimd", "zlib"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "VocAItion Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "PHP App"
+
+[[workflows.workflow]]
+name = "VocAItion Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd python-service && /home/runner/workspace/.pythonlibs/bin/python3.11 app.py"
+waitForPort = 8080
+
+[[workflows.workflow]]
+name = "PHP App"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "php -S 0.0.0.0:5000"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
